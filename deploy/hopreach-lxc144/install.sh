@@ -53,19 +53,14 @@ echo "install: deps del asistente (npm + chromium playwright; la primera vez)"
 if [ ! -d "$TARGET/node_modules" ]; then
   cp "$BUNDLE/package.json" "$BUNDLE/package-lock.json" "$TARGET/" 2>/dev/null || true
   (cd "$TARGET" && npm ci --no-audit --no-fund 2>&1 | tail -1)
-  (cd "$TARGET" && npx playwright install --with-deps chromium 2>&1 | tail -1)
+  # deps del sistema las pone root; el NAVEGADOR va a un cache COMPARTIDO
+  # (default sería $HOME del que instala — y el servicio corre como
+  # hopreach, no root).
+  (cd "$TARGET" && npx playwright install-deps chromium 2>&1 | tail -1) || true
+  (cd "$TARGET" && sudo -u hopreach env \
+    PLAYWRIGHT_BROWSERS_PATH=/opt/hopreach/pw-cache \
+    npx playwright install chromium 2>&1 | tail -1) || true
   chown -R hopreach:hopreach "$TARGET"
-fi
-
-echo "install: índice RAG (se genera en destino contra ollama si falta)"
-if [ ! -s "$TARGET/tools/assistant/data/docs-index.json" ]; then
-  (
-    cd "$TARGET"
-    sudo -u hopreach env \
-      ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1 \
-      ASSISTANT_EMBED_MODEL=bge-m3 \
-      node tools/assistant/index.js 2>&1 | tail -1
-  )
 fi
 
 echo "install: unidades systemd"
@@ -89,3 +84,19 @@ echo "install: healthchecks"
 curl -fsS --max-time 10 http://127.0.0.1:8090/api/dmr/policy > /dev/null && echo "  dmrsim api ✓"
 curl -fsS --max-time 10 http://127.0.0.1/v1/models?x=1  > /dev/null 2>&1 && echo "  asistente vía nginx ✓" || echo "  asistente: revisa hopreach-assistant.service (upstream ollama puede seguir cargando)"
 echo "install: ok"
+
+# El índice RAG va AL FINAL y NON-FATAL: el deploy termina arriba aunque
+# el embedding remoto se demore (ollama carga bge-m3 frío la primera vez);
+# se reintentará en el próximo deploy o a mano:
+#   cd /opt/hopreach && sudo -u hopreach node tools/assistant/index.js
+echo "install: índice RAG (se genera en destino contra ollama si falta)"
+if [ ! -s "$TARGET/tools/assistant/data/docs-index.json" ]; then
+  (
+    cd "$TARGET"
+    sudo -u hopreach env \
+      PATH=/usr/local/bin:/usr/bin:/bin \
+      ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1 \
+      ASSISTANT_EMBED_MODEL=bge-m3 \
+      node tools/assistant/index.js 2>&1 | tail -2
+  ) || echo "  RAG pendiente: reintentar con 'node tools/assistant/index.js' en destino (no bloquea el despliegue)"
+fi

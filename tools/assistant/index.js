@@ -25,9 +25,10 @@ const repoRoot = path.join(__dirname, "..", "..");
 
   const docs = [];
   const started = Date.now();
-  // Serial batches of 16 — upstreams rate-limit politely and the corpus
-  // fits in a handful of them anyway.
-  const BATCH = 16;
+  // Lotes de 4: el upstream puede ser un ollama en CPU (bge-m3 frío
+  // tarda decenas de segundos) y el coste del índice completo sigue
+  // siendo trivial.
+  const BATCH = 4;
   for (let i = 0; i < chunks.length; i += BATCH) {
     const batch = chunks.slice(i, i + BATCH);
     const res = await llm

@@ -40,16 +40,21 @@ async function postJson(path, body, timeoutMs = 120_000) {
 
 // chat() posts a raw OpenAI messages/tools payload and returns the
 // response verbatim (choices[].message with .content / .tool_calls).
+// Timeout alto A PROPÓSITO: el upstream puede ser un ollama en CPU —
+// el primer turno carga los pesos fríos (gemma4:12b ≈ 8 GB ≈ un minuto
+// o más en 8 cores) y la respuesta completa puede pasar de varias
+// centenas de tokens. Un timeout corto aquí haría parecer caída algo
+// que es simplemente hardware honesto.
 function chat(body) {
   return postJson("/chat/completions", {
     temperature: 0.3,
     ...body,
     model: body.model || MODEL || "assistant",
-  });
+  }, 900_000);
 }
 
 function embed(input) {
-  return postJson("/embeddings", { model: EMBED_MODEL, input });
+  return postJson("/embeddings", { model: EMBED_MODEL, input }, 400_000);
 }
 
 async function listUpstreamModels() {
