@@ -30,6 +30,11 @@ mkdir -p "$TARGET/examples"
 cp -a "$BUNDLE/examples/."    "$TARGET/examples/" 2>/dev/null || true
 mkdir -p "$TARGET/tools"
 cp -a "$BUNDLE/tools/."       "$TARGET/tools/"
+mkdir -p "$TARGET/docs"
+cp -a "$BUNDLE/docs/."        "$TARGET/docs/"
+# El corpus del RAG vive en el DESPLIEGUE también (los MD son su fuente;
+# copiarlos junto al código es lo que los mantiene juntos).
+cp "$BUNDLE/README.md" "$BUNDLE/CHANGELOG.md" "$BUNDLE/CLAUDE.md" "$TARGET/" 2>/dev/null || true
 chown -R hopreach:hopreach    "$TARGET"
 
 echo "install: seed de configuración (idempotente)"
