@@ -17,6 +17,12 @@ on:
 jobs:
   go:
     runs-on: [self-hosted, hopreach]
+    env:
+      # gpucompute (internal/gpucompute) compiles through go-webgpu/wgpu,
+      # which is cgo-gated: without a C toolchain the cgo files are excluded
+      # and the package's shared types go "undefined". The Docker build
+      # does the same thing (golang:1.23-bookworm + CGO_ENABLED=1).
+      CGO_ENABLED: "1"
     steps:
       - uses: actions/checkout@v4
 

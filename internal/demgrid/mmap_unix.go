@@ -9,7 +9,6 @@ package demgrid
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"syscall"
 	"unsafe"
 )
