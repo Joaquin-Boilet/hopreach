@@ -108,7 +108,11 @@ async function runTurn(reqBody, meta = {}) {
 
     if (!msg.tool_calls?.length) {
       recordTurn({ t0, toolCalls, toolErrors, screenshots, upstreamError, reqBody, msg });
-      return { message: msg, tools_offered: toolsOn };
+      return {
+        message: msg,
+        tools_offered: toolsOn,
+        model_used: llm.pickModel(messages) || llm.MODEL || "assistant",
+      };
     }
 
     messages.push({ role: "assistant", content: msg.content ?? "", tool_calls: msg.tool_calls });

@@ -75,7 +75,7 @@ async function handleChat(req, res) {
     id: `chatcmpl-dmr-${Date.now().toString(36)}`,
     object: "chat.completion",
     created: Math.floor(Date.now() / 1000),
-    model: llm.MODEL,
+    model: reply.model_used || llm.MODEL,
     choices: [{
       index: 0,
       message: msg,

@@ -10,9 +10,16 @@
 
 "use strict";
 
+// Two brains, honest routing (per-turn):
+//   ASSISTANT_MODEL        — fast local chat (tools ✓), default qwen3:8b
+//   ASSISTANT_VISION_MODEL — multimodal fallback for turns that CARRY an
+//                            image (screenshot reads): gemma4:12b. On a
+//                            CPU-only upstream this one costs minutes per
+//                            turn — used only when pixels arrive.
 const BASE_URL = process.env.ASSISTANT_BASE_URL || "http://127.0.0.1:11434/v1";
 const API_KEY = process.env.ASSISTANT_API_KEY || "";
 const MODEL = process.env.ASSISTANT_MODEL || "";
+const VISION_MODEL = process.env.ASSISTANT_VISION_MODEL || MODEL;
 const EMBED_MODEL = process.env.ASSISTANT_EMBED_MODEL || "bge-m3";
 
 async function postJson(path, body, timeoutMs = 120_000) {
@@ -38,6 +45,15 @@ async function postJson(path, body, timeoutMs = 120_000) {
   }
 }
 
+// pickModel(messages) — a turn routes to the vision brain only when its
+// payload actually carries an image part (screenshot tool results are
+// content-parts arrays with image_url).
+function pickModel(messages = []) {
+  const hasImage = messages.some((m) =>
+    Array.isArray(m.content) && m.content.some((p) => p?.type === "image_url"));
+  return hasImage ? VISION_MODEL : undefined; // undefined → chat() default
+}
+
 // chat() posts a raw OpenAI messages/tools payload and returns the
 // response verbatim (choices[].message with .content / .tool_calls).
 // Timeout alto A PROPÓSITO: el upstream puede ser un ollama en CPU —
@@ -49,7 +65,7 @@ function chat(body) {
   return postJson("/chat/completions", {
     temperature: 0.3,
     ...body,
-    model: body.model || MODEL || "assistant",
+    model: pickModel(body.messages) || body.model || MODEL || "assistant",
   }, 900_000);
 }
 
@@ -65,4 +81,4 @@ async function listUpstreamModels() {
   return j.data?.map((m) => m.id).filter(Boolean) || [];
 }
 
-module.exports = { BASE_URL, MODEL, EMBED_MODEL, chat, embed, listUpstreamModels, postJson };
+module.exports = { BASE_URL, MODEL, VISION_MODEL, EMBED_MODEL, chat, embed, listUpstreamModels, postJson, pickModel };
