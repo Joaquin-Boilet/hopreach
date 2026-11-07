@@ -49,6 +49,25 @@ fi
 mkdir -p "$TARGET/dem-cache" "$TARGET/share-store"
 chown -R hopreach:hopreach "$TARGET"
 
+echo "install: deps del asistente (npm + chromium playwright; la primera vez)"
+if [ ! -d "$TARGET/node_modules" ]; then
+  cp "$BUNDLE/package.json" "$BUNDLE/package-lock.json" "$TARGET/" 2>/dev/null || true
+  (cd "$TARGET" && npm ci --no-audit --no-fund 2>&1 | tail -1)
+  (cd "$TARGET" && npx playwright install --with-deps chromium 2>&1 | tail -1)
+  chown -R hopreach:hopreach "$TARGET"
+fi
+
+echo "install: índice RAG (se genera en destino contra ollama si falta)"
+if [ ! -s "$TARGET/tools/assistant/data/docs-index.json" ]; then
+  (
+    cd "$TARGET"
+    sudo -u hopreach env \
+      ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1 \
+      ASSISTANT_EMBED_MODEL=bge-m3 \
+      node tools/assistant/index.js 2>&1 | tail -1
+  )
+fi
+
 echo "install: unidades systemd"
 cp "$BUNDLE/deploy/hopreach-lxc144/dmrsim.service"           /etc/systemd/system/
 cp "$BUNDLE/deploy/hopreach-lxc144/hopreach-assistant.service" /etc/systemd/system/

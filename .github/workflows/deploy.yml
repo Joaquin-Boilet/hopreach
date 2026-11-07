@@ -26,7 +26,7 @@ jobs:
 
       - name: armar bundle
         run: |
-          tar czf /tmp/hopreach-bundle.tgz dist public examples/dmr tools/assistant deploy
+          tar czf /tmp/hopreach-bundle.tgz dist public examples/dmr tools/assistant deploy package.json package-lock.json
 
       - name: enviar e instalar en el LXC 144
         run: |
