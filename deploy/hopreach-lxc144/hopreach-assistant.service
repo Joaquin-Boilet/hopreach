@@ -9,7 +9,7 @@ ExecStart=/usr/bin/node /opt/hopreach/tools/assistant/server.js
 Environment=ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1
 Environment=ASSISTANT_MODEL=qwen3:8b
 Environment=ASSISTANT_VISION_MODEL=gemma4:12b
-Environment=ASSISTANT_EMBED_MODEL=bge-m3
+Environment=ASSISTANT_EMBED_MODEL=nomic-embed-text
 Environment=DMRSIM_URL=http://127.0.0.1:8090
 Environment=APP_SCREENSHOT_URL=http://127.0.0.1:8090/dmr.html
 Environment=ASSISTANT_PORT=18096
