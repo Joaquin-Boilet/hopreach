@@ -6,6 +6,12 @@ with the propagation/terrain core compiled to WebAssembly. It does not observe
 the mesh itself — it consumes an observation backend (CoreScope, MeshCore
 Beacon) through `internal/meshsource`.
 
+**Este fork añade el modo DMR** (Motorola TRBO Tier II convencional + IPSC,
+ver Rule 4.5 y `docs/DMR_MODE.md`): misma física de terreno, vocabulario
+distinto — repetidoras, handys, talkgroups, slots TDMA y enlaces IP Site
+Connect — con su CLI (`cmd/dmrsim`), su página (`public/dmr.html`), su API
+(`/api/dmr/*`) y un asistente agéntico compatible OpenAI (`tools/assistant/`).
+
 ```
 cmd/            hopreach (pipeline), hopreach-shareapi (share + mesh API + GPU broker), hopreach-gpuworker
 internal/       meshsource (backend interface) · corescope · beacon · sources (factory) · meshapi (HTTP translation)
@@ -119,6 +125,29 @@ See `docs/DATA_SOURCE_SPEC.md` (the contract) and
 
 ---
 
+## Rule 4.5 — the DMR fork layer (Motorola TRBO)
+
+This fork adds a **DMR vocabulary stack** alongside the MeshCore one. The
+separation is architectural, not cosmetic:
+
+- `internal/dmr` / `internal/dmrsim` / `internal/dmrapi` speak DMR directly
+  (repeaters, slots, talkgroups, IPSC) — they do NOT force their shapes into
+  the MeshCore wire envelopes, and the MeshCore wire never gains DMR fields.
+- The one shared seam is `meshsource.Source` (the `dmrtopology` backend) so
+  the map/roster/region pipeline keeps working unchanged. The topology file
+  is the truth: no observed packets, no calibration.
+- The DMR API endpoints live under `/api/dmr/*` with their own wire shapes;
+  `public/dmr.html` + `dmr.js` are their only browser clients.
+- Simulation semantics: every non-delivery carries a reason; a caller that
+  cannot key its repeater is a *result* (`no_uplink`/`not_carried`), not an
+  error. The engine never silently drops and never half-airs.
+- Presets are equipment, not physics: `internal/dmr`'s Motorola catalogue is
+  2–3 dB conservative and any YAML field overrides it.
+
+See `docs/DMR_MODE.md` for the full reference (español).
+
+---
+
 ## Rule 5 — accuracy claims must be honest
 
 This tool tells people where their radios reach. That makes silent wrongness
@@ -143,4 +172,12 @@ go build ./... && go test ./...
 npm run test:unit          # node unit tests, no browser
 npx playwright test        # e2e; needs docker compose up
 go run ./cmd/hopreach      # full pipeline against ./config.yaml
+
+# DMR fork layer:
+make dmrsim                # serve the DMR example page + /api/dmr/* on :8090
+make dmr-test              # the DMR engine/domain test matrix
+go run ./cmd/dmrsim -network dmr-network.yaml -scenario escenario.yaml -md   # headless report
+node tools/assistant/index.js   # reindex the assistant's RAG corpus (after docs edits)
+node tools/assistant/server.js  # the agentic assistant (OpenAI-compatible /v1)
+node tools/assistant/docs-shot.js <url-base>   # validate the DMR page render + screenshots
 ```
