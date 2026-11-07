@@ -1,0 +1,46 @@
+# Deploy automático del fork a la caja de publicación (LXC 144).
+
+name: deploy-dmr
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  build-and-ship:
+    runs-on: [self-hosted, hopreach]
+    env:
+      TARGET_IP: 172.26.10.244
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+          cache: true
+
+      - name: compilar binarios
+        run: |
+          mkdir -p dist
+          go build -o dist/dmrsim             ./cmd/dmrsim
+          go build -o dist/hopreach-shareapi  ./cmd/hopreach-shareapi
+
+      - name: armar bundle
+        run: |
+          tar czf /tmp/hopreach-bundle.tgz dist public examples/dmr tools/assistant deploy
+
+      - name: enviar e instalar en el LXC 144
+        run: |
+          scp -o StrictHostKeyChecking=no /tmp/hopreach-bundle.tgz runner@$TARGET_IP:/tmp/
+          ssh -o StrictHostKeyChecking=no runner@$TARGET_IP "sudo /bin/bash -s" <<'EOS'
+          set -euo pipefail
+          rm -rf /usr/local/src/hopreach-bundle /opt/hopreach.bak
+          mkdir -p /usr/local/src/hopreach-bundle
+          tar xzf /tmp/hopreach-bundle.tgz -C /usr/local/src/hopreach-bundle
+          # el bundle trae install.sh dentro de deploy/hopreach-lxc144/
+          cp /usr/local/src/hopreach-bundle/deploy/hopreach-lxc144/install.sh /tmp/jr-install.sh
+          bash /tmp/jr-install.sh
+          EOS
+
+      - name: verificación final en la caja publicada
+        run: |
+          ssh -o StrictHostKeyChecking=no runner@$TARGET_IP "curl -fsS --max-time 15 http://127.0.0.1/api/dmr/policy"

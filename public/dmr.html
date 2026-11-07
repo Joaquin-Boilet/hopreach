@@ -99,8 +99,24 @@
 
 </main>
 
+<button id="asst-open" title="Asistente en línea">&#9733; Asistente</button>
+
+<div id="asst-panel" hidden>
+  <div class="asst-head">
+    <b>Asistente HopReach-DMR</b>
+    <button id="asst-close" title="cerrar">✕</button>
+  </div>
+  <div id="asst-msgs"></div>
+  <div class="asst-input-row">
+    <input id="asst-input" placeholder="pregunta algo de la red…" autocomplete="off">
+    <button id="asst-send">enviar</button>
+  </div>
+  <p class="asst-note">Lee la documentación, corre simulaciones de este despliegue y mira capturas de la página. Nota cada respuesta con las estrellas: esa nota manda sobre cualquier métrica interna.</p>
+</div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="site-brand.js"></script>
 <script src="dmr.js"></script>
+<script src="dmr-assistant.js"></script>
 </body>
 </html>
