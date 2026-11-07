@@ -78,15 +78,22 @@ func backendFor(cfg config.Config) (meshsource.Source, error) {
 			corescope.NewClient(cfg.CoreScope.APIURL, &http.Client{Timeout: timeout}),
 		), nil
 
+	case config.SourceDMRTopology:
+		// The MotoTRBO adaptation: the network file is the backend. Its
+		// path is a required, explicit value — defaulting to an absent
+		// file would silently map an empty region instead of failing a
+		// half-configured DMR deployment.
+		if strings.TrimSpace(cfg.DMR.NetworkPath) == "" {
+			return nil, fmt.Errorf("dmrtopology data source: dmr.network_path is required")
+		}
+		return meshsource.NewDMRTopologySource(cfg.DMR.NetworkPath), nil
+
 	default:
 		return nil, fmt.Errorf("unknown source type %q", kind)
 	}
 }
 
-// Both backends must satisfy the whole interface. Without these, a missing
-// method only surfaces at the call site that needed it — which for the render
-// pipeline meant discovering the gap during a live run.
-var (
-	_ meshsource.Source = (*meshsource.CoreScopeSource)(nil)
-	_ meshsource.Source = (*beacon.Client)(nil)
-)
+// Build the completeness assertions the old switch had implicitly.
+var _ meshsource.Source = (*meshsource.CoreScopeSource)(nil)
+var _ meshsource.Source = (*meshsource.DMRTopologySource)(nil)
+var _ meshsource.Source = (*beacon.Client)(nil)

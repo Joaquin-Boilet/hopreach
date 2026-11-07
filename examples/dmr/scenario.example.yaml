@@ -1,0 +1,27 @@
+# Escenario de ejemplo para dmrsim: tres PTT sobre la red de ejemplo
+# (examples/dmr/dmr-network.example.yaml). Tiempos en ms desde t=0.
+#
+# Correrlo headless:
+#
+#   go run ./cmd/dmrsim -network dmr-network.yaml -scenario examples/dmr/scenario.example.yaml -md
+#
+# Qué enseña:
+#   - llamada #2 Empieza mientras la #1 sigue al aire: mismo (site, slot),
+#     solape mayor al guard de 60 ms ⇒ ambos audios garbilizados desde el
+#     solape.
+#   - llamada #3 pide EMERGENCIA al otro slot, por eso —no colisiona—
+#     aunque su sitio sea el mismo: la separación TDMA es la real.
+
+calls:
+  - from: HT-RUTA-VN
+    tg: FAENA1
+    at_ms: 0
+    duration_ms: 8000
+  - from: HT-MAIPO
+    tg: MANTENCION
+    at_ms: 1500
+    duration_ms: 4000
+  - from: BASE-FLOTA
+    tg: EMERGENCIA
+    at_ms: 7000
+    duration_ms: 6000

@@ -11,7 +11,11 @@
   &nbsp;·&nbsp;
   <a href="docs/TECHNICAL.md">Technical reference</a>
   &nbsp;·&nbsp;
+  <a href="docs/DMR_MODE.md"><b>Modo DMR (MotoTRBO)</b></a>
+  &nbsp;·&nbsp;
   <a href="docs/simulator-model.md">Simulator model</a>
+  &nbsp;·&nbsp;
+  <a href="CHANGELOG.md">Changelog</a>
 </p>
 
 ---
@@ -31,6 +35,13 @@ around each site — the actual hills in the way.
 
 Everything runs from **one Docker container** that refreshes itself daily.
 
+> **Este repositorio es un fork.** Además del pipeline original de MeshCore,
+> añade un **modo DMR completo** (Motorola TRBO Tier II convencional + IPSC)
+> para simular redes de radio Motorola sobre el mismo motor de terreno:
+> repetidoras, handys, talkgroups, slots TDMA y enlaces IP Site Connect.
+> Ver [docs/DMR_MODE.md](docs/DMR_MODE.md) (español) y
+> [CHANGELOG.md](CHANGELOG.md).
+
 ## Bring your own observation backend
 
 HopReach does not watch the mesh itself — it reads someone else's record of
@@ -38,7 +49,7 @@ what was heard. Which one is a single config key:
 
 ```yaml
 source:
-  type: corescope   # or: beacon
+  type: corescope   # or: beacon, or: dmrtopology (DMR mode)
 ```
 
 Both are first-class: same map, same coverage rasters, same planner and
@@ -70,6 +81,36 @@ pipeline, the API and the front end all switch together. See
 [Beacon compatibility](docs/BEACON_COMPATIBILITY_PLAN.md#0-status-implemented-and-verified-against-a-real-beacon)
 for the feature-by-feature matrix, verified by loading one real mesh into both
 backends and comparing the output.
+
+## DMR mode: simular una red Motorola TRBO (Tier II + IPSC)
+
+The same physics engine (real DEM, link budget, diffraction) also drives a
+**DMR simulator** — the vocabulary is different on purpose: repeaters with a
+duplex frequency pair, two TDMA timeslots, Motorola handys, talkgroups and
+IP Site Connect links between sites instead of MeshCore relays and LoRa
+packets.
+
+```bash
+# topology example ready to copy: examples/dmr/dmr-network.example.yaml
+go run ./cmd/dmrsim -serve :8090      # local server: page + /api/dmr/*
+go run ./cmd/dmrsim -network dmr-network.yaml -scenario scenario.yaml -md
+```
+
+![Página DMR: mapa Leaflet con repetidoras, handys y enlaces por clase de margen, más panel de escenarios](docs/screenshot-dmr-report.png)
+
+The two environments:
+
+- **Web page** (`/dmr.html`): Leaflet map with repeaters, handys and every
+  terrain-computed link drawn by margin class, plus a scenario panel that
+  animates calls per slot.
+- **CLI headless** (`cmd/dmrsim`): scenario in → text/markdown/JSON report
+  out. Every non-delivery is explained (`no_margin`, `tg_no_sub`,
+  `denied_busy`, …); nothing drops silently.
+
+What is modelled and what is deliberately not modelled is spelled out in
+[docs/DMR_MODE.md](docs/DMR_MODE.md) (español, incl. YAML reference and the
+HTTP API). The original MeshCore pipeline is untouched — the DMR mode is
+additive, selected with `source.type: dmrtopology`.
 
 ## Quick start
 

@@ -48,6 +48,11 @@ type Config struct {
 	Schedule    ScheduleConfig    `yaml:"schedule"`
 	Share       ShareConfig       `yaml:"share"`
 
+	// DMR is the MotoTRBO (Tier II conventional + IPSC) adaptation's own
+	// block: where the topology file lives. Only read when
+	// source.type is dmrtopology.
+	DMR DMRConfig `yaml:"dmr"`
+
 	// RemoteWorker configures cmd/hopreach-shareapi's GPU broker — the
 	// bearer token a remote cmd/hopreach-gpuworker must present, and how
 	// long to wait for a submitted job before giving up. Distinct from
@@ -151,11 +156,25 @@ type SourceConfig struct {
 	Scopes []string `yaml:"scopes"`
 }
 
+// DMRConfig points the dmrtopology backend at its topology file: the
+// MotoTRBO network (repeaters, radios, talkgroups, IPSC peers) HopReach-DMR
+// maps and simulates. see internal/dmr and docs/DMR_MODE.md.
+type DMRConfig struct {
+	// NetworkPath is the topology YAML. Default "dmr-network.yaml" next to
+	// the working directory (the same convention config.yaml itself
+	// follows).
+	NetworkPath string `yaml:"network_path"`
+}
+
 // SourceType names a backend. Kept as constants so a typo in config.yaml is
 // rejected at load rather than silently selecting the default.
 const (
 	SourceCoreScope = "corescope"
 	SourceBeacon    = "beacon"
+	// SourceDMRTopology selects the local DMR topology file backend — the
+	// MotoTRBO adaptation. Unlike the two observation backends it watches
+	// nobody: the network file IS the data.
+	SourceDMRTopology = "dmrtopology"
 )
 
 // Resolve returns the effective backend name, applying the default and the
@@ -171,12 +190,12 @@ func (c Config) Resolve() (string, error) {
 		return SourceCoreScope, nil
 	}
 	switch t {
-	case SourceCoreScope, SourceBeacon:
+	case SourceCoreScope, SourceBeacon, SourceDMRTopology:
 		return t, nil
 	default:
 		return "", fmt.Errorf(
-			"config: source.type %q is not a known backend (want %q or %q)",
-			c.Source.Type, SourceCoreScope, SourceBeacon)
+			"config: source.type %q is not a known backend (want %q, %q or %q)",
+			c.Source.Type, SourceCoreScope, SourceBeacon, SourceDMRTopology)
 	}
 }
 
@@ -453,6 +472,9 @@ func Default() Config {
 			TTLDays:    7,
 			StoreDir:   "shared-plans",
 			ListenAddr: "127.0.0.1:8081",
+		},
+		DMR: DMRConfig{
+			NetworkPath: "dmr-network.yaml",
 		},
 		RemoteWorker: RemoteWorkerConfig{
 			Token:             "",

@@ -25,6 +25,8 @@ import (
 
 	"hopreach/internal/analytics"
 	yconfig "hopreach/internal/config"
+	"hopreach/internal/dmr"
+	"hopreach/internal/dmrapi"
 	"hopreach/internal/meshapi"
 	"hopreach/internal/sources"
 	"hopreach/internal/sysinfo"
@@ -250,6 +252,31 @@ func main() {
 	} else {
 		meshapi.New(src).Register(http.DefaultServeMux)
 		log.Printf("shareapi: mesh API serving %s at %s", src.Name(), meshapi.Prefix)
+	}
+
+	// The DMR adaptation: when source.type is dmrtopology this container
+	// is a MotoTRBO deployment, so its browser routes register here —
+	// exactly the same handler set cmd/dmrsim -serve exposes locally.
+	// A broken dmr-network.yaml degrades to plan sharing only (one log
+	// line), never to a 500 page for everything else.
+	if cfg.Source.Type == yconfig.SourceDMRTopology {
+		networkPath := cfg.DMR.NetworkPath
+		if networkPath == "" {
+			networkPath = yconfig.Default().DMR.NetworkPath
+		}
+		if n, err := dmr.LoadYAML(networkPath); err != nil {
+			log.Printf("shareapi: DMR API disabled (dmr-network.yaml): %v", err)
+		} else if dh, err := dmrapi.New(n, dmrapi.TerrainSettings{
+			DEMZoom:     cfg.Terrain.DEMZoom,
+			CacheDir:    cfg.Terrain.DEMCacheDir,
+			TileURLBase: cfg.Terrain.DEMTileURLBase,
+		}); err != nil {
+			log.Printf("shareapi: DMR API disabled: %v", err)
+		} else {
+			dh.Register(http.DefaultServeMux)
+			go dh.Warmup()
+			log.Printf("shareapi: DMR API serving %q — page at /dmr.html", n.Name)
+		}
 	}
 
 	recordWebsiteHardwareOnce()

@@ -1,0 +1,119 @@
+# Red DMR de ejemplo — zona cordillera de Santiago, Chile (MotoTRBO Tier II
+# convencional + IPSC).
+#
+# Archivo de demostración: nombres y DMR IDs son sintéticos, las coordenadas
+# apuntan a cerros reales del fuete de la RM. Cópielo a dmr-network.yaml (o
+# apunte dmr.network_path a su propia copia y edite todo: frecuencias, TGs,
+# posiciones y presets están al nivel del YAML).
+#
+# La física no se declara aqui — vive en el modelo de enlaces (internal/dmr/
+# + internal/propagation): cada margen uplink/downlink se calcula contra el
+# terreno real (DEM). Los presets SLR5500/XPR8300e/DP4801e/... cargan la
+# potencia, sensibilidad y altura de antena típicas; cualquier campo
+# explícito sobrescribe el preset.
+
+network_name: "Cordillera Santiago — ejemplo"
+sim_policy:
+  # Denegación ante colisión en (site, slot): "overlap" garbiliza ambas
+  # llamadas cuando el solape supera el guard; "deny" rechaza la segunda
+  # PTT ("está ocupado").
+  collision: overlap
+  # Latencia por salto IP Site Connect: afecta cuándo llega el audio
+  # por una cadena de sitios, no a la física.
+  ipsc_latency_ms: 80
+  # Solapes más cortos que el guard se absorben (sub-trama aggressive):
+  # los más largos corrompen ambas llamadas.
+  guard_ms: 60
+
+talkgroups:
+  - name: FAENA1      # operación normal de faena / día a día
+    id: "100"
+    slot: 1
+  - name: MANTENCION  # backlog de taller y coordinación de repuestos
+    id: "101"
+    slot: 1
+  - name: EMERGENCIA  # canal de emergencia: se protege con slot dedicado
+    id: "9"
+    slot: 2
+
+repeaters:
+  # Cerro Manquehue norte (1.850 m): el sitio que sirve el valle norte.
+  - name: MANQUEHUE
+    dmr_id: 741100
+    model: slr5500
+    lat: -33.3555
+    lon: -70.4361
+    antenna_height_m: 20          # torre sobre la cota; default 15
+    tx_freq_mhz: 439.175          # salida (los handys escuchan)
+    rx_freq_mhz: 434.175          # entrada (los handys transmiten)
+    slots: { ts1: true, ts2: true }  # EMERGENCIA corre en TS2 aquí
+    peers: [FARELLONES, SAN-RAMON]
+    scope: rm-cordillera
+
+  # Farellones / El Colorado (~2.400 m): cubre la ruta del cordón.
+  - name: FARELLONES
+    dmr_id: 741101
+    model: xpr8300e
+    lat: -33.3239
+    lon: -70.3767
+    tx_freq_mhz: 439.175
+    rx_freq_mhz: 434.175
+    peers: [MANQUEHUE, SAN-RAMON]
+    scope: rm-cordillera
+
+  # Cerro San Ramón (~3.250 m): sitio con mejor vista al sur-este.
+  - name: SAN-RAMON
+    dmr_id: 741102
+    model: slr1000
+    lat: -33.4692
+    lon: -70.4103
+    antenna_height_m: 18
+    tx_freq_mhz: 439.175
+    rx_freq_mhz: 434.175
+    peers: [MANQUEHUE]
+    scope: rm-cordillera
+
+radios:
+  # Base de flota (móvil en estación): DM4601e con antena de techo.
+  - name: BASE-FLOTA
+    role: mobile
+    model: dm4601e
+    lat: -33.3560
+    lon: -70.5210        # Lo Barnechea bajo
+    tgs: [FAENA1, MANTENCION, EMERGENCIA]
+    notes: "Base despacho, 24/7"
+
+  # Handy R7a en la ruta a Valle Nevado: terreno de verdad (cortes y
+  # laderas), útil para probar el degradado del margen.
+  - name: HT-RUTA-VN
+    role: handy
+    model: r7a
+    lat: -33.3260
+    lon: -70.2890
+    tgs: [FAENA1, EMERGENCIA]
+
+  # Handy en San José de Maipo: sirve a SAN-RAMON por uplink sur.
+  - name: HT-MAIPO
+    role: handy
+    model: dp4401e
+    lat: -33.6355
+    lon: -70.3556
+    tgs: [FAENA1]
+
+  # Móvil en zona urbana Providencia.
+  - name: MOV-SUPPLY
+    role: mobile
+    model: dm4601e
+    lat: -33.4275
+    lon: -70.6040
+    tgs: [MANTENCION]
+
+  # Radio sin posición: entra al roster (rol "companion" en el mapa, sin
+  # marcador) y en la simulación explica que no entrega por falta de
+  # enlaces — la honestidad del reporte, no un drop silencioso.
+  - name: HT-BODEGA
+    role: handy
+    model: dp4801e
+    # sin lat/lon: se registra cuando lo asinen
+    tgs: [FAENA1]
+    notes: " Radio de bodega, posición pendiente"

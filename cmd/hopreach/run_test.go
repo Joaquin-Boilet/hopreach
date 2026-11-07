@@ -149,11 +149,16 @@ func TestAnalyticsPathIsOutsideOutputDir(t *testing.T) {
 	const outputDir = "/usr/share/nginx/html/data" // the image's own output_dir
 	got := filepath.Clean(analyticsPath(outputDir, "runs.jsonl"))
 
-	if want := "/usr/share/nginx/html/analytics/runs.jsonl"; got != want {
+	// The exact string is a forwarding-path convention, so the equality is
+	// checked in the image's own separator convention (the CI/dev UNIX
+	// host); the load-bearing assertion below is platform-neutral, which
+	// is what a Windows dev build — the one allowed difference — still
+	// has to honour.
+	if want := filepath.FromSlash("/usr/share/nginx/html/analytics/runs.jsonl"); got != want {
 		t.Errorf("analyticsPath = %q, want %q", got, want)
 	}
 	// The load-bearing part: not under output_dir, which each run rewrites.
-	if strings.HasPrefix(got, filepath.Clean(outputDir)+string(filepath.Separator)) {
+	if strings.HasPrefix(strings.ToLower(got), strings.ToLower(filepath.Clean(outputDir))+string(filepath.Separator)) {
 		t.Errorf("analyticsPath %q is inside output_dir %q — it would be rewritten by each run, and the deployment's separate analytics volume would no longer cover it", got, outputDir)
 	}
 }

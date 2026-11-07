@@ -365,11 +365,18 @@ func run(cfg appConfig) (err error) {
 		sites = make([]propagation.Site, len(selected))
 		for i, n := range selected {
 			groundM := grid.At(*n.Lat, *n.Lon)
+			heightM := cfg.propagation.AntennaHeightM
+			// A backend that knows the mast height wins over the
+			// config-wide default — dmrtopology carries it per repeater
+			// from dmr-network.yaml, which is what a DMR map trusts.
+			if h, ok := n.NodeHeight(); ok {
+				heightM = h
+			}
 			sites[i] = propagation.Site{
 				Lat:       *n.Lat,
 				Lon:       *n.Lon,
 				GroundM:   groundM,
-				TxHeightM: groundM + cfg.propagation.AntennaHeightM,
+				TxHeightM: groundM + heightM,
 			}
 		}
 

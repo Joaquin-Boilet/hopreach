@@ -559,8 +559,9 @@ compiled code.
 ```
 cmd/
   hopreach/            main binary: fetch → filter → compute → write, plus -prepare
-  hopreach-shareapi/   plan-sharing server + remote-GPU broker routes
+  hopreach-shareapi/   plan-sharing server + remote-GPU broker routes (+ DMR API when source.type is dmrtopology)
   hopreach-gpuworker/  remote GPU worker (deployed separately, see docker-compose.gpuworker.yml)
+  dmrsim/              DMR CLI + local -serve mode (public/ + /api/dmr/*) — see docs/DMR_MODE.md
 wasm/
   main.go              internal/propagation + internal/demgrid compiled to WebAssembly
 internal/
@@ -575,8 +576,17 @@ internal/
   demgrid/                  elevation tile fetch/cache/decode + bilinear grid lookup (Load is native-only; Grid/At/NewFromElev also compile to WASM)
   gpucompute/                GPU-accelerated margins via WebGPU/Vulkan (WGSL port of internal/propagation, verified against CPU before ever trusted)
   gpujob/                     wire-format types shared between the broker, the batch job's remote-dispatch path, and the remote worker
+  meshsource/                 the Source interface implementation matrix (corescope, beacon, dmrtopology)
+  sources/                    backend factory: config → Source instance
+  meshapi/                    translation layer: any Source → stable browser API (/api/nodes, /api/scopes, …)
+  analytics/                    anonymous plan-share event counter
+  sysinfo/                        memory-limit + hardware probe helpers
+  dmr/                       DMR domain model: network/repeaters/radios/talkgroups/policy, Motorola presets, terrain link computation
+  dmrsim/                    the DMR simulation engine (interval arithmetic; slot/TG collisions, IPSC latency, duty cycle)
+  dmrapi/                       DMR HTTP API (/api/dmr/topology, /api/dmr/simulate, /api/dmr/policy)
 public/
   index.html, app.js, style.css, config.js   map, basemap switcher, legend, opacity control, progress bar
+  dmr.html, dmr.js, style-dmr.css            the DMR page (Leaflet: repeaters, handys, links by margin, scenario panel)
   wasm-bridge.js, wasm_exec.js*, hopreach.wasm*   Go/WebAssembly runtime + the compiled module (*generated, not committed — see Local development)
   terrain.js, propagation.js   thin JS bindings over the WASM module, plus tile fetch/cache (browser fetch + canvas decode)
   planner.js, planner-worker.js   the planning UI (add-repeater, personal adjustments, line-of-sight, connect repeaters, cover an area, save/load/export/import/share, KML export, companion pin)
@@ -586,4 +596,13 @@ docker/
   config.docker.yaml       the image's built-in config.yaml (container-correct paths); mount your own over /config/config.yaml to override
   gpuworker.Dockerfile, docker-compose.gpuworker.yml   separate build/deploy for the remote GPU worker (a different machine than the main stack)
 config.example.yaml   fully-documented config reference — copy to config.yaml
+examples/dmr/         complete DMR example set: topology, scenario, config, boundary GeoJSON
 ```
+
+The DMR adaptation (Tier II conventional + IPSC) is a deliberate
+**additive fork layer**: it reuses `internal/propagation`, `internal/demgrid`
+and the pipeline untouched, and adds the `dmr`/`dmrsim`/`dmrapi` stack with
+its own vocabulary, its own CLI, and one config switch
+(`source.type: dmrtopology`). No data flows between the two worlds — the DMR
+topology file is the truth, there are no observed packets, and calibration
+skips itself under this backend. See [`docs/DMR_MODE.md`](DMR_MODE.md).

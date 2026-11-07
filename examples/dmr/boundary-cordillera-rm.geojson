@@ -1,0 +1,38 @@
+{
+  "type": "Feature",
+  "properties": {
+    "name": "Cordillera Santiago (RM), Chile",
+    "description": "Límite ilustrativo del área de cobertura del ejemplo DMR: precordillera y cordillera de la región Metropolitana (Lo Barnechea a San José de Maipo). Editable; no es el límite administrativo oficial."
+  },
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [-70.585, -33.265],
+        [-70.520, -33.275],
+        [-70.505, -33.320],
+        [-70.540, -33.360],
+        [-70.530, -33.400],
+        [-70.570, -33.450],
+        [-70.560, -33.520],
+        [-70.490, -33.570],
+        [-70.440, -33.620],
+        [-70.395, -33.680],
+        [-70.290, -33.700],
+        [-70.150, -33.655],
+        [-70.100, -33.600],
+        [-70.175, -33.545],
+        [-70.260, -33.520],
+        [-70.340, -33.500],
+        [-70.375, -33.455],
+        [-70.350, -33.400],
+        [-70.310, -33.365],
+        [-70.320, -33.300],
+        [-70.360, -33.260],
+        [-70.420, -33.230],
+        [-70.505, -33.240],
+        [-70.585, -33.265]
+      ]
+    ]
+  }
+}

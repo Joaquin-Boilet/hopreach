@@ -42,6 +42,12 @@ type Node struct {
 
 	HashSize     int    // path-hash width this node adverts with (1..3), 0 = unknown
 	DefaultScope string // region/scope name, "" = unknown
+
+	// nodeHeight carries a backend-reported mast height (metres AGL).
+	// Only dmrtopology supplies one; the observation backends leave nil.
+	// Read it through NodeHeight() so the storage shape can change
+	// without touching callers — see cmd/hopreach's site building.
+	nodeHeight *float64
 }
 
 // ReachLink is an *observed* link from one node to another — evidence, never

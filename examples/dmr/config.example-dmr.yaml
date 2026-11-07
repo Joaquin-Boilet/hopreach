@@ -1,0 +1,73 @@
+# config.yaml de ejemplo para el modo DMR (MotoTRBO Tier II convencional
+# + IPSC). Cópielo a config.yaml y ajuste lo que cambie: todo lo no
+# declarado conserva los defaults de internal/config.Default.
+#
+# Este deployment apunta la fuente al archivo de topología propio (en vez
+# de observar una red MeshCore), por eso el frontend corre con la página
+# DMR y su API (/internal/dmrapi): coverage map + planificador quedan
+# disponibles igual, porque la física es la misma.
+
+output_dir: public/data
+
+source:
+  # dmrtopology: la red se modela desde el YAML propio (repeaters, radios,
+  # talkgroups, peers IPSC). No hay paquetes observados: el archivo ES la
+  # verdad, y la calibración se salta sola.
+  type: dmrtopology
+
+dmr:
+  # Topología del ejemplo: https://github.com/... examples/dmr
+  network_path: dmr-network.yaml
+
+terrain:
+  # Zoom del DEM para los pases estándar (11 ≈ 76 m/celda; baje a 12-13
+  # para detalles locales). Los tiles terrarium se cachean en dem_cache_dir.
+  dem_zoom: 12
+  dem_cache_dir: dem-cache
+  # dem_tile_url_base: https://s3.amazonaws.com/elevation-tiles-prod/terrarium
+
+propagation:
+  # Defaults para la herramienta de cobertura en el navegador; el modo DMR
+  # usa los presets por equipo de cada archivo de topología, no estos.
+  frequency_mhz: 439.175
+  tx_power_dbm: 47
+  tx_antenna_gain_dbi: 3
+  rx_antenna_gain_dbi: 0
+  rx_sensitivity_dbm: -114
+  fade_margin_db: 10
+  antenna_height_m: 18
+  rx_height_m: 1.6
+  max_range_km: 60
+  margin_green_db: 9
+
+region:
+  name: "Cordillera Santiago (RM), Chile"
+  boundary_path: examples/dmr/boundary-cordillera-rm.geojson
+  required_scope: ""
+
+map:
+  center_lat: -33.42
+  center_lon: -70.38
+  zoom: 11
+
+site:
+  name: "Red MotoTRBO Cordillera"
+  subtitle: "Simulación DMR Tier II + IPSC — cordillera de Santiago"
+  active_hours: 6
+  degraded_hours: 24
+  theme_css: ""
+  logo: ""
+  home_url: ""
+
+share:
+  ttl_days: 30
+  store_dir: /tmp/plans
+  listen_addr: 127.0.0.1:8081
+
+coverage:
+  image_width: 1024
+  precision_width: 2048
+  precision_dem_zoom: 13
+  precision_supersample: 2
+  max_alpha: 220
+  min_recompute_interval_hours: 20

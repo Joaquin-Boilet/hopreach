@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Red MotoTRBO — simulación DMR</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="site-theme.css">
+<link rel="stylesheet" href="style-dmr.css">
+</head>
+<body>
+
+<header class="dmr-header">
+  <div class="dmr-header-id">
+    <a class="dmr-back" href="/">← Mapa MeshCore</a>
+    <h1 id="dmr-net-name">Red MotoTRBO <small>cargando…</small></h1>
+    <p id="dmr-net-sub" class="dmr-sub"></p>
+  </div>
+  <div id="dmr-fspl-banner" class="dmr-fspl-banner" hidden>
+    ⚠️ Sin terreno (FSPL puro): los márgenes de esta vista son optimistas.
+  </div>
+</header>
+
+<main class="dmr-main">
+
+  <section class="dmr-map-col">
+    <div id="dmr-map"></div>
+    <div class="dmr-legend">
+      <b>Enlaces</b>
+      <span class="lg solid">solid ≥ +9</span>
+      <span class="lg ok">ok ≥ 0</span>
+      <span class="lg marg">marginal ≥ −6</span>
+      <span class="lg blk">blocked</span>
+      <b>Dispositivos</b>
+      <span class="lg rep">repetidora</span>
+      <span class="lg handy">handy</span>
+      <span class="lg mobile">móvil</span>
+      <span class="lg nofix">sin posición</span>
+    </div>
+  </section>
+
+  <section class="dmr-side">
+
+    <div class="dmr-card">
+      <h2>Escenario</h2>
+      <p class="dmr-hint">Una fila por PTT: quién habla, a qué talkgroup,
+      cuándo (ms desde t=0) y cuánto dura. El motor resuelve solapes, slots y
+      enlaces IPSC de una sola pasada.</p>
+
+      <div class="dmr-fields">
+        <label>Radio
+          <select id="sc-radio"></select>
+        </label>
+        <label>Talkgroup
+          <select id="sc-tg"></select>
+        </label>
+        <label class="num">at (ms)
+          <input id="sc-at" type="number" min="0" step="250" value="0">
+        </label>
+        <label class="num">dur (ms)
+          <input id="sc-dur" type="number" min="500" step="500" value="3000">
+        </label>
+        <button id="sc-add">+ agregar</button>
+      </div>
+
+      <table class="dmr-calls" id="sc-calls">
+        <thead><tr><th>#</th><th>Radio</th><th>TG</th><th>at ms</th><th>dur ms</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="dmr-sc-actions">
+        <button id="sc-run" class="primary">▶ simular</button>
+        <button id="sc-demo">ejemplo</button>
+        <button id="sc-clear">vaciar</button>
+      </div>
+
+      <div id="sc-status" class="dmr-status" hidden></div>
+    </div>
+
+    <div class="dmr-card" id="sc-report" hidden>
+      <h2>Reporte</h2>
+      <div id="report-calls"></div>
+      <h3>Carga de canal</h3>
+      <div id="report-loads"></div>
+    </div>
+
+    <div class="dmr-card" id="roster-card">
+      <h2>Inventario</h2>
+      <p class="dmr-hint" id="tg-list"></p>
+      <table class="dmr-roster" id="radio-roster">
+        <thead><tr><th>Radio</th><th>Modelo</th><th>Home site</th><th>TGs</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+  </section>
+
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="site-brand.js"></script>
+<script src="dmr.js"></script>
+</body>
+</html>

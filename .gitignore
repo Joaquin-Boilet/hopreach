@@ -16,6 +16,16 @@ test-results/
 /hopreach
 /hopreach-shareapi
 /hopreach-gpuworker
+/dmrsim
+/dmrsim.exe
+
+# Generated artifacts (see Makefile target): extra DEM caches the DMR API
+# or probes may create during development.
+dem-cache*/
+
+# The agentic assistant (tools/assistant/): its vector index and UX
+# ledgers are runtime data, regenerated per deployment — never source.
+tools/assistant/data/
 
 # Claude Code's own local session/tooling state — not project source.
 .claude/
