@@ -7,9 +7,11 @@ User=hopreach
 WorkingDirectory=/opt/hopreach
 ExecStart=/usr/bin/node /opt/hopreach/tools/assistant/server.js
 Environment=ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1
-Environment=ASSISTANT_NUM_THREADS=8
-Environment=ASSISTANT_MODEL=qwen3:8b
-Environment=ASSISTANT_VISION_MODEL=gemma4:12b
+# num_thread por PARAMETER del Modelfile (qwen3-8t/gemma4-8t, ver README
+# deploy): ollama /v1 ignora options.num_thread del payload — medido
+# 2026-11-08 en el 144: n_threads=40 colapsaba y ningún turno cerraba.
+Environment=ASSISTANT_MODEL=qwen3-8t
+Environment=ASSISTANT_VISION_MODEL=gemma4-8t
 Environment=ASSISTANT_EMBED_MODEL=nomic-embed-text
 Environment=DMRSIM_URL=http://127.0.0.1:8090
 Environment=APP_SCREENSHOT_URL=http://127.0.0.1:8090/dmr.html

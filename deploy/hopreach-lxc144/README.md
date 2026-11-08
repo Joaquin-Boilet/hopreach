@@ -8,7 +8,7 @@ solución completa del fork:
 | nginx | 80 | estático (`public/`) + proxies `/api/` (dmrsim) y `/v1/` (asistente) + `/dem-tiles/` |
 | `dmrsim -serve` (systemd `dmrsim.service`) | 127.0.0.1:8090 | `/api/dmr/*`: topología con márgenes de terreno real, `simulate`, `policy` |
 | asistente agéntico (`hopreach-assistant.service`) | 127.0.0.1:18096 | API compatible OpenAI (`/v1/chat/completions` con RAG + screenshots + tool loop) |
-| Ollama | 127.0.0.1:11434 | upstream LLM del asistente (`gemma4:12b` con visión para leer capturas + `bge-m3` para el RAG) |
+| Ollama | 127.0.0.1:11434 | upstream LLM del asistente — `qwen3-8t` (chat + tools) y `gemma4-8t` (visión), `num_thread=8` en el Modelfile; el RAG es lexical (embeds opcionales, `nomic-embed-text`) |
 
 ## Requisitos de la caja (elegidos por el perfil real de la solución)
 
@@ -26,6 +26,14 @@ solución completa del fork:
 # modelo pull:
 ollama pull bge-m3
 ollama pull gemma4:12b
+# par de modelos del asistente (threads por PARAMETER — el shim /v1 de
+# ollama ignora options.num_thread del payload, medido 2026-11-08; sin
+# esto el runner toma el cpuinfo del host — 40 threads sobre el cpuset
+# de 8 — y ningún turno cierra):
+printf 'FROM qwen3:8b\nPARAMETER num_thread 8\n'   > /tmp/mod-8t
+ollama create qwen3-8t -f /tmp/mod-8t
+printf 'FROM gemma4:12b\nPARAMETER num_thread 8\n' > /tmp/mod-8t
+ollama create gemma4-8t -f /tmp/mod-8t
 # deps del navegador del asistente (una vez):
 sudo -u hopreach bash -c 'cd /opt/hopreach && npm i @playwright/test' \
   && sudo /opt/hopreach/node_modules/.bin/playwright install --with-deps chromium

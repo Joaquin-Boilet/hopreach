@@ -7,6 +7,38 @@ fork, no el historial upstream.
 
 ## [Unreleased]
 
+### Fixed — asistente agéntico cierra turnos en CPU (LXC 144)
+
+- **Ningún turno cerraba en producción.** El runner de Ollama despertaba
+  con `n_threads=40` (cpuinfo del host) sobre el cpuset de 8 vCPU de la
+  caja; medido 2026-11-08 (sesiones `final3/ct-direct/final4/cierre1`):
+  4 turnos seguidos `upstream_error` a los ~600 s, `GIN 500` después de
+  5 m con 573 tokens generados sobre un prompt de 563. El
+  `options.num_thread` del payload NO existe para el shim OpenAI de
+  Ollama — los threads que llegan al runner viven en los **parámetros
+  del modelo**: Modelfile `PARAMETER num_thread 8` →
+  `ollama create qwen3-8t / gemma4-8t` (ver deploy/hopreach-lxc144).
+- **`upstream LLM: fetch failed` a los ~416 s.** Sin `stream`, el shim
+  contesta solo cuando TERMINA la generación y el fetch de Node (undici)
+  mata el body tras ~5 min de silencio: 15 s de carga + tool call +
+  ~300 s de silencio exactos. `lib/llm.js` ahora streamea el upstream
+  SIEMPRE (`stream: true`) y reensambla el `chat.completion` OpenAI-shape
+  (content, reasoning/reasoning_content, tool_calls incrementales,
+  usage, y fallback JSON si el upstream no streamea) — los turnos largos
+  ya no mueren en el transporte y ningún límite de idle se dispara.
+- El unit del asistente apunta al par con thread pool fijo
+  (`qwen3-8t`, `gemma4-8t`) y `ASSISTANT_NUM_THREADS` sale del unit
+  (el número de threads es del modelo, no del servicio).
+- **Verificado en el 144, caja a HEAD (md5 por archivo):** turno E2E
+  nginx→agente→ollama 200 en 181 s (`upstream_error:false`, score 79,
+  YAML + citas de docs); probes directos del par 14,5 s frío
+  (`qwen3-8t`) y 36 s frío (`gemma4-8t`), todos con `n_threads = 8`
+  en el log del runner.
+- Sabe pendiente: turno de VISIÓN (take_screenshot) sin correr en el
+  par nuevo, y el E2E citó un `docs/TOPOLOGY.md` que no está en el
+  corpus — guardrail de citas (todas las citas deben venir de los chunks
+  recuperados) queda como defecto abierto.
+
 ## [0.1.0-dmr] — 2026-11-07 (fork: modo DMR Motorola TRBO)
 
 ### Added — dominio DMR
