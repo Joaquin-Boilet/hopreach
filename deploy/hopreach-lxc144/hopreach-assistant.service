@@ -7,6 +7,7 @@ User=hopreach
 WorkingDirectory=/opt/hopreach
 ExecStart=/usr/bin/node /opt/hopreach/tools/assistant/server.js
 Environment=ASSISTANT_BASE_URL=http://127.0.0.1:11434/v1
+Environment=ASSISTANT_NUM_THREADS=8
 Environment=ASSISTANT_MODEL=qwen3:8b
 Environment=ASSISTANT_VISION_MODEL=gemma4:12b
 Environment=ASSISTANT_EMBED_MODEL=nomic-embed-text

@@ -54,23 +54,41 @@ function pickModel(messages = []) {
   return hasImage ? VISION_MODEL : undefined; // undefined → chat() default
 }
 
+// ollamaOption(): extra upstream options, ONLY when this deployment asks
+// for them (ASSISTANT_NUM_THREADS). Why it matters: an LXC's llama-server
+// reads the HOST's /proc/cpuinfo (80 cores) and spawns that many threads
+// over the container's 8-CPU cpuset — thread contention collapsed prefill
+// to 0.31 tok/s and every generate hung past 420 s. Passing num_thread=8
+// fixed it: 30 s cold including model load. Other OpenAI-shaped upstreams
+// ignore the unknown field, so the gate stays opt-in.
+function ollamaOptions() {
+  const t = Number(process.env.ASSISTANT_NUM_THREADS || 0);
+  if (!t || t < 1) return {};
+  return { options: { num_thread: t } };
+}
+
 // chat() posts a raw OpenAI messages/tools payload and returns the
 // response verbatim (choices[].message with .content / .tool_calls).
 // Timeout alto A PROPÓSITO: el upstream puede ser un ollama en CPU —
-// el primer turno carga los pesos fríos (gemma4:12b ≈ 8 GB ≈ un minuto
-// o más en 8 cores) y la respuesta completa puede pasar de varias
-// centenas de tokens. Un timeout corto aquí haría parecer caída algo
-// que es simplemente hardware honesto.
+// el primer turno carga los pesos fríos y la respuesta completa puede
+// pasar de varias centenas de tokens. Un timeout corto aquí haría
+// parecer caída algo que es simplemente hardware honesto.
 function chat(body) {
   return postJson("/chat/completions", {
     temperature: 0.3,
     ...body,
+    ...ollamaOptions(),
     model: pickModel(body.messages) || body.model || MODEL || "assistant",
   }, 900_000);
 }
 
 function embed(input) {
-  return postJson("/embeddings", { model: EMBED_MODEL, input }, 400_000);
+  // options rides as an ollama extension; other upstreams ignore it.
+  return postJson("/embeddings", {
+    model: EMBED_MODEL,
+    input,
+    ...ollamaOptions(),
+  }, 400_000);
 }
 
 async function listUpstreamModels() {
