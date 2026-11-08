@@ -105,9 +105,8 @@ async function dispatch(name, args) {
       if (!docs.length) {
         return "El índice RAG está vacío: reindexa con `node tools/assistant/index.js` (o avisa que este despliegue no indexó docs todavía).";
       }
-      const q = await llm.embed(String(args.query || "")).catch((e) => ({ error: e }));
-      if (q.error) return `Error buscando en docs: ${q.error.message.split("\n")[0]}`;
-      const hits = store.retrieve(docs, q.data[0].embedding, 6);
+      const hits = store.retrieveLexical(docs, String(args.query || ""), 6);
+      if (!hits.length) return "Sin resultados documentados para esa búsqueda. Di honestamente que el corpus no la cubre.";
       return hits
         .map((h) => `### ${h.source} — ${h.heading}\n(score ${h.score.toFixed(3)})\n${h.text}`)
         .join("\n\n---\n\n");

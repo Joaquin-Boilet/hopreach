@@ -56,4 +56,39 @@ function retrieve(docs, queryVec, k = 6) {
   return scored.slice(0, k);
 }
 
-module.exports = { save, load, retrieve, INDEX_PATH };
+// retrieveLexical(query, docs, k) — keyword retrieval for the small
+// corpus scale this runs at. Returns the same shape as the vector path.
+//
+// Why not vectors at query time, measured on the production box (Xeon
+// Gold 6138, CPU-only): every query embed cost 13–33 s and forced a
+// model swap the ollama scheduler mishandled (5-min load timeouts). This
+// corpus is 121 chunks with heading labels — lexical scoring here is
+// faster by 100×, deterministic, and model-free. The vector path stays
+// available in retrieve() for when the corpus outgrows one lexical pass.
+function tokenize(q) {
+  return String(q || "").toLowerCase()
+    .replace(/[^a-z0-9áéíóúñü_/\-\.\"]+/gi, " ")
+    .split(/\s+/).filter((w) => w.length > 1);
+}
+
+function retrieveLexical(docs, query, k = 6) {
+  const tokens = tokenize(query);
+  if (!tokens.length) return [];
+  const scored = docs.map((d) => {
+    const hay = `${d.source} ${d.heading} ${d.text}`.toLowerCase();
+    let score = 0;
+    for (const t of tokens) {
+      // field-weighted: source/heading hits count far more than body hits
+      if (d.source.toLowerCase().includes(t)) score += 3;
+      if (d.heading.toLowerCase().includes(t)) score += 2;
+      if (d.text.toLowerCase().includes(t)) score += 1;
+    }
+    return { ...d, score: score / (Math.sqrt(d.text.length) || 1) };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored.filter((s) => s.score > 0).slice(0, k).map((d) => ({
+    source: d.source, heading: d.heading, text: d.text, score: d.score / 10,
+  }));
+}
+
+module.exports = { save, load, retrieve, retrieveLexical, INDEX_PATH };

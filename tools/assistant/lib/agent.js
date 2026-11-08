@@ -42,8 +42,8 @@ function lastUserText(messages = []) {
 }
 
 // ragContext(messages) → the retrieval block injected into the system
-// message. k=5: enough to carry a full section, small enough to keep the
-// prompt clean.
+// message. Lexical retrieval (see store.js for the measured why): the
+// corpus is small and labeled; no per-query embedding on the hot path.
 async function ragContext(messages) {
   const docs = store.load();
   if (!docs.length) {
@@ -51,9 +51,7 @@ async function ragContext(messages) {
   }
   const q = lastUserText(messages);
   if (!q) return "";
-  const emb = await llm.embed(q).catch(() => null);
-  if (!emb) return " (aviso: embeddings no disponibles en este momento)";
-  const hits = store.retrieve(docs, emb.data[0].embedding, 5);
+  const hits = store.retrieveLexical(docs, q, 5);
   if (!hits.length) return "";
   return (
     "\n\n## Contexto recuperado de la documentación del producto\n" +
